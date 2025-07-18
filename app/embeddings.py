@@ -51,7 +51,9 @@ class ChutesEmbeddings:
             json={"inputs": text}
         ) as response:
             response.raise_for_status()
-            return await response.json()
+            result = await response.json()
+            # Assume the embedding is under the 'embedding' key
+            return result.get('embedding', [])
 
 # Choose embedder based on configuration
 if settings.EMBEDDING_TYPE == EmbeddingType.DEEPSEEK:
