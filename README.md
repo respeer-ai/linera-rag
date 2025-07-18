@@ -43,7 +43,12 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ### Docker Run
 ```bash
+# Create a directory for persistent data
+mkdir -p ./linera-rag-data
+
+# Run the container with mounted data volume
 docker run -d -p 8000:8000 --name linera-rag \
+  -v $(pwd)/linera-rag-data:/app/data \
   -e DEEPSEEK_API_KEY=your_api_key_here \
   linera-rag
 ```
@@ -92,6 +97,7 @@ Modify `app/config.py` for:
 Or set environment variables when running Docker:
 ```bash
 docker run -d -p 8000:8000 --name linera-rag \
+  -v $(pwd)/linera-rag-data:/app/data \
   -e DEEPSEEK_API_KEY=your_key \
   -e DEEPSEEK_API_URL=https://your-custom-url.com \
   -e UPDATE_INTERVAL_HOURS=12 \
