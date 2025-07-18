@@ -1,9 +1,10 @@
 import os
 import re
+import asyncio
 from git import Repo
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.config import settings
-from app.embeddings import embedder
+from app.embeddings import embedder, embedder_async
 import chromadb
 from chromadb.utils import embedding_functions
 from typing import List, Dict, Any
@@ -75,21 +76,7 @@ class GitHubSync:
         
         return results
     
-    def process_repository(self, repo_url: str) -> List[Dict[str, Any]]:
-        """Process all relevant files in a repository"""
-        repo_path = self.clone_or_update_repo(repo_url)
-        repo_name = os.path.basename(repo_path)
-        all_chunks = []
-        
-        for root, _, files in os.walk(repo_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                chunks = self.process_file(file_path, repo_name)
-                all_chunks.extend(chunks)
-        
-        return all_chunks
-    
-    def create_index(self, chunks: List[Dict[str, Any]], collection_name: str):
+    async def create_index(self, chunks: List[Dict[str, Any]], collection_name: str):
         """Create a new index with the given chunks"""
         if not chunks:
             return
@@ -105,7 +92,16 @@ class GitHubSync:
         metadatas = []
         ids = []
         
-        for chunk in chunks:
+        # Extract texts for embedding
+        texts = [chunk["text"] for chunk in chunks]
+        
+        # Get embeddings based on configuration
+        if embedder_async:
+            embeddings = await embedder_async.embed_documents_async(texts)
+        else:
+            embeddings = embedder.embed_documents(texts)
+        
+        for i, chunk in enumerate(chunks):
             documents.append(chunk["text"])
             metadatas.append(chunk["metadata"])
             # Create unique ID based on content and metadata
@@ -116,11 +112,12 @@ class GitHubSync:
         collection.add(
             documents=documents,
             metadatas=metadatas,
-            ids=ids
+            ids=ids,
+            embeddings=embeddings
         )
     
-    def update(self):
-        """Update all repositories and refresh the index"""
+    async def update(self):
+        """Update all repositories and refresh the index asynchronously"""
         print("Starting repository update...")
         all_chunks = []
         
@@ -130,9 +127,9 @@ class GitHubSync:
             all_chunks.extend(chunks)
             print(f"Processed {len(chunks)} chunks from {repo_url}")
         
-        # Create new index
+        # Create new index asynchronously
         print("Creating new index...")
-        self.create_index(all_chunks, self.new_collection_name)
+        await self.create_index(all_chunks, self.new_collection_name)
         
         # Atomically swap indexes
         print("Swapping indexes...")

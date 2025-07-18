@@ -1,10 +1,11 @@
 import os
+import asyncio
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from app.github_sync import github_sync
 from app.chroma_manager import chroma_manager
 from app.config import settings
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import uvicorn
 
 app = FastAPI(title="Linera RAG Service")
@@ -22,12 +23,12 @@ class QueryResponse(BaseModel):
     results: list[QueryResponseItem]
 
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     # Initialize repositories and index on startup
-    github_sync.update()
+    await github_sync.update()
     
     # Schedule regular updates
-    scheduler = BackgroundScheduler()
+    scheduler = AsyncIOScheduler()
     scheduler.add_job(
         github_sync.update,
         'interval',
