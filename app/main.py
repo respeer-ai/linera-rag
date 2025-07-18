@@ -25,16 +25,24 @@ class QueryResponse(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     # Initialize repositories and index on startup
-    await github_sync.update()
+    try:
+        await github_sync.update()
+    except Exception as e:
+        print(f"Error during startup index update: {e}")
+        raise
     
     # Schedule regular updates
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(
-        github_sync.update,
-        'interval',
-        hours=settings.UPDATE_INTERVAL_HOURS
-    )
-    scheduler.start()
+    try:
+        scheduler.add_job(
+            github_sync.update,
+            'interval',
+            hours=settings.UPDATE_INTERVAL_HOURS
+        )
+        scheduler.start()
+    except Exception as e:
+        print(f"Error starting scheduler: {e}")
+        raise
 
 @app.post("/query", response_model=QueryResponse)
 async def query_endpoint(request: QueryRequest):
