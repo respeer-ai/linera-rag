@@ -52,8 +52,13 @@ class ChutesEmbeddings:
         ) as response:
             response.raise_for_status()
             result = await response.json()
-            # Assume the embedding is under the 'embedding' key
-            return result.get('embedding', [])
+            # Handle both list and dict responses
+            if isinstance(result, list):
+                return result  # Return the list directly
+            elif isinstance(result, dict):
+                return result.get('embedding', [])  # Extract embedding if available
+            else:
+                return []  # Default to empty list for unexpected responses
 
 # Choose embedder based on configuration
 if settings.EMBEDDING_TYPE == EmbeddingType.DEEPSEEK:
