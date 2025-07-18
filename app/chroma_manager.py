@@ -13,9 +13,16 @@ class ChromaManager:
     def get_collection(self, name: str = None):
         """Get the current production collection"""
         collection_name = name or self.current_collection_name
+        # Ensure the embedding function returns a list of floats
+        def validate_embedding(texts):
+            embeddings = embedder.embed_documents(texts)
+            if not all(isinstance(e, list) and all(isinstance(x, (int, float)) for x in e) for e in embeddings):
+                raise ValueError("Invalid embedding format: expected list of lists of numbers")
+            return embeddings
+
         return self.chroma_client.get_collection(
             name=collection_name,
-            embedding_function=embedder.embed_documents
+            embedding_function=validate_embedding
         )
     
     def query_index(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
