@@ -95,15 +95,28 @@ class GitHubSync:
         # Extract texts for embedding
         texts = [chunk["text"] for chunk in chunks]
         
+        # Helper function to safely parse string representations of lists
+        def parse_embedding(embedding):
+            if isinstance(embedding, str):
+                try:
+                    # Remove brackets and split by comma
+                    return [float(x.strip()) for x in embedding.strip('[]').split(',')]
+                except (ValueError, AttributeError):
+                    return None
+            elif isinstance(embedding, dict) and 'embedding' in embedding:
+                return parse_embedding(embedding['embedding'])
+            elif isinstance(embedding, list):
+                return [float(x) for x in embedding]
+            return None
+
         # Get embeddings based on configuration
         if embedder_async:
             embeddings = await embedder_async.embed_documents_async(texts)
-            # Ensure embeddings are properly formatted
-            embeddings = [embedding['embedding'] if isinstance(embedding, dict) else embedding for embedding in embeddings]
         else:
             embeddings = embedder.embed_documents(texts)
-            # Ensure embeddings are properly formatted
-            embeddings = [embedding['embedding'] if isinstance(embedding, dict) else embedding for embedding in embeddings]
+            
+        # Ensure embeddings are properly formatted
+        embeddings = [parse_embedding(embedding) for embedding in embeddings]
         
         for i, chunk in enumerate(chunks):
             documents.append(chunk["text"])
