@@ -17,7 +17,8 @@ class DeepSeekEmbeddings:
             input=texts,
             model=self.model
         )
-        return [embedding.embedding for embedding in response.data]
+        # Ensure the response is properly formatted as a list of lists of floats
+        return [list(map(float, embedding.embedding)) for embedding in response.data]
     
     def embed_query(self, text: str) -> list[float]:
         """Embed a single query"""
