@@ -49,16 +49,22 @@ mkdir -p ./linera-rag-data
 # Run the container with mounted data volume and environment variables
 docker run -d -p 8000:8000 --name linera-rag \
   -v $(pwd)/linera-rag-data:/app/data \
-  -e DEEPSEEK_API_KEY=your_api_key_here \
-  -e DEEPSEEK_API_URL=https://api.deepseek.com/v1  # Optional: only if using custom URL
+  -e EMBEDDING_TYPE=chutes \  # or "deepseek"
+  -e CHUTES_API_KEY=your_chutes_key_here \  # required for chutes
+  -e DEEPSEEK_API_KEY=your_deepseek_key_here \  # required for deepseek
+  -e CHUTES_API_URL=https://chutes-baai-bge-large-en-v1-5.chutes.ai/embed \  # optional
+  -e DEEPSEEK_API_URL=https://api.deepseek.com/v1 \  # optional
   linera-rag
 ```
 
 ### Environment Variables
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `DEEPSEEK_API_KEY` | Yes | - | Your DeepSeek API key |
-| `DEEPSEEK_API_URL` | No | `https://api.deepseek.com/v1` | Custom API endpoint for DeepSeek |
+| `EMBEDDING_TYPE` | Yes | `chutes` | Embedding provider: `chutes` or `deepseek` |
+| `CHUTES_API_KEY` | When using chutes | - | Your Chutes API key |
+| `CHUTES_API_URL` | No | `https://chutes-baai-bge-large-en-v1-5.chutes.ai/embed` | Chutes API endpoint |
+| `DEEPSEEK_API_KEY` | When using deepseek | - | Your DeepSeek API key |
+| `DEEPSEEK_API_URL` | No | `https://api.deepseek.com/v1` | DeepSeek API endpoint |
 | `UPDATE_INTERVAL_HOURS` | No | `6` | Repository update frequency (hours) |
 | `CHUNK_SIZE` | No | `1000` | Document chunk size for processing |
 
