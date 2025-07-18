@@ -106,7 +106,20 @@ class GitHubSync:
             elif isinstance(embedding, dict) and 'embedding' in embedding:
                 return parse_embedding(embedding['embedding'])
             elif isinstance(embedding, list):
-                return [float(x) for x in embedding]
+                # Handle nested lists by flattening them
+                def flatten(lst):
+                    result = []
+                    for item in lst:
+                        if isinstance(item, list):
+                            result.extend(flatten(item))
+                        else:
+                            try:
+                                result.append(float(item))
+                            except (TypeError, ValueError):
+                                continue
+                    return result
+                flattened = flatten(embedding)
+                return flattened if flattened else None
             return None
 
         # Get embeddings based on configuration
