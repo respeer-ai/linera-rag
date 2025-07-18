@@ -98,8 +98,12 @@ class GitHubSync:
         # Get embeddings based on configuration
         if embedder_async:
             embeddings = await embedder_async.embed_documents_async(texts)
+            # Ensure embeddings are properly formatted
+            embeddings = [embedding['embedding'] if isinstance(embedding, dict) else embedding for embedding in embeddings]
         else:
             embeddings = embedder.embed_documents(texts)
+            # Ensure embeddings are properly formatted
+            embeddings = [embedding['embedding'] if isinstance(embedding, dict) else embedding for embedding in embeddings]
         
         for i, chunk in enumerate(chunks):
             documents.append(chunk["text"])
@@ -108,13 +112,25 @@ class GitHubSync:
             unique_str = f"{chunk['text']}{str(chunk['metadata'])}"
             ids.append(hashlib.sha256(unique_str.encode()).hexdigest())
         
-        # Add to collection
-        collection.add(
-            documents=documents,
-            metadatas=metadatas,
-            ids=ids,
-            embeddings=embeddings
-        )
+        # Filter out any None embeddings
+        valid_data = [
+            (d, m, i, e) for d, m, i, e in zip(documents, metadatas, ids, embeddings)
+            if e is not None
+        ]
+        
+        # Unzip the valid data
+        if valid_data:
+            documents, metadatas, ids, embeddings = zip(*valid_data)
+            
+            # Add to collection
+            collection.add(
+                documents=documents,
+                metadatas=metadatas,
+                ids=ids,
+                embeddings=embeddings
+            )
+        else:
+            print("No valid embeddings to add to collection")
 
     def process_repository(self, repo_url: str) -> List[Dict[str, Any]]:
         """Clone or update a repository and process all its files"""
