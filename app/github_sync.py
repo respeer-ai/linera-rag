@@ -115,6 +115,21 @@ class GitHubSync:
             ids=ids,
             embeddings=embeddings
         )
+
+    def process_repository(self, repo_url: str) -> List[Dict[str, Any]]:
+        """Clone or update a repository and process all its files"""
+        repo_path = self.clone_or_update_repo(repo_url)
+        repo_name = repo_url.split('/')[-1].replace('.git', '')
+        
+        # Walk through all files in the repository
+        all_chunks = []
+        for root, dirs, files in os.walk(repo_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                file_chunks = self.process_file(file_path, repo_name)
+                all_chunks.extend(file_chunks)
+        
+        return all_chunks
     
     async def update(self):
         """Update all repositories and refresh the index asynchronously"""
