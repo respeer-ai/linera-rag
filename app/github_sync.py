@@ -138,10 +138,10 @@ class GitHubSync:
             unique_str = f"{chunk['text']}{str(chunk['metadata'])}"
             ids.append(hashlib.sha256(unique_str.encode()).hexdigest())
         
-        # Filter out any None embeddings
+        # Filter out any None or empty embeddings
         valid_data = [
             (d, m, i, e) for d, m, i, e in zip(documents, metadatas, ids, embeddings)
-            if e is not None
+            if e is not None and len(e) > 0
         ]
         
         # Unzip the valid data
