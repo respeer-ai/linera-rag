@@ -46,12 +46,21 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 # Create a directory for persistent data
 mkdir -p ./linera-rag-data
 
-# Run the container with mounted data volume
+# Run the container with mounted data volume and environment variables
 docker run -d -p 8000:8000 --name linera-rag \
   -v $(pwd)/linera-rag-data:/app/data \
   -e DEEPSEEK_API_KEY=your_api_key_here \
+  -e DEEPSEEK_API_URL=https://api.deepseek.com/v1  # Optional: only if using custom URL
   linera-rag
 ```
+
+### Environment Variables
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DEEPSEEK_API_KEY` | Yes | - | Your DeepSeek API key |
+| `DEEPSEEK_API_URL` | No | `https://api.deepseek.com/v1` | Custom API endpoint for DeepSeek |
+| `UPDATE_INTERVAL_HOURS` | No | `6` | Repository update frequency (hours) |
+| `CHUNK_SIZE` | No | `1000` | Document chunk size for processing |
 
 The service will:
 1. Download and index repositories on startup

@@ -1,9 +1,9 @@
 # Use official Python 3.12 image
 FROM python:3.12-slim-bookworm
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Set environment variables using key=value format
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Install system dependencies
 RUN apt-get update && \
@@ -20,9 +20,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
-
-# Set environment variables for DeepSeek API key
-ENV DEEPSEEK_API_KEY=your_api_key_here
 
 # Expose port
 EXPOSE 8000
