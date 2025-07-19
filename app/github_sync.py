@@ -38,7 +38,7 @@ class GitHubSync:
         # Use asyncio.to_thread to run git operations in a separate thread
         if os.path.exists(repo_path):
             repo = Repo(repo_path)
-            await repo.remotes.origin.pull()
+            repo.remotes.origin.pull()
         else:
             await Repo.clone_from(repo_url, repo_path)
         
