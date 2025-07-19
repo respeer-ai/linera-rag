@@ -102,29 +102,49 @@ class GitHubSync:
         
         # Helper function to safely parse string representations of lists
         def parse_embedding(embedding):
+            # If it's a list of floats, return as is
+            if isinstance(embedding, list) and all(isinstance(x, (int, float)) for x in embedding):
+                return embedding
+            
+            # If it's a tuple, convert to list
+            if isinstance(embedding, tuple):
+                return list(embedding)
+            
+            # If it's a string, try to parse it
             if isinstance(embedding, str):
                 try:
-                    # Remove brackets and split by comma
-                    return [float(x.strip()) for x in embedding.strip('[]').split(',')]
-                except (ValueError, AttributeError):
+                    # Try JSON parsing
+                    import json
+                    parsed = json.loads(embedding)
+                    if isinstance(parsed, list) and all(isinstance(x, (int, float)) for x in parsed):
+                        return parsed
+                except json.JSONDecodeError:
+                    try:
+                        # Fallback to literal_eval
+                        import ast
+                        parsed = ast.literal_eval(embedding)
+                        if isinstance(parsed, list) and all(isinstance(x, (int, float)) for x in parsed):
+                            return parsed
+                    except:
+                        try:
+                            # Final fallback: split string
+                            if embedding.startswith('[') and embedding.endswith(']'):
+                                embedding = embedding[1:-1]
+                            return [float(x) for x in embedding.split(',')]
+                        except:
+                            return None
+            
+            # If it's a list of non-float items, try to convert
+            if isinstance(embedding, list):
+                try:
+                    return [float(x) for x in embedding]
+                except:
                     return None
-            elif isinstance(embedding, dict) and 'embedding' in embedding:
+            
+            # If it's a dict with 'embedding' key, use that
+            if isinstance(embedding, dict) and 'embedding' in embedding:
                 return parse_embedding(embedding['embedding'])
-            elif isinstance(embedding, list):
-                # Handle nested lists by flattening them
-                def flatten(lst):
-                    result = []
-                    for item in lst:
-                        if isinstance(item, list):
-                            result.extend(flatten(item))
-                        else:
-                            try:
-                                result.append(float(item))
-                            except (TypeError, ValueError):
-                                continue
-                    return result
-                flattened = flatten(embedding)
-                return flattened if flattened else None
+            
             return None
 
         # Embed documents asynchronously
@@ -152,13 +172,19 @@ class GitHubSync:
             documents, metadatas, ids, embeddings = zip(*valid_data)
             
             # Add to collection
-            collection.add(
-                documents=documents,
-                metadatas=metadatas,
-                ids=ids,
-                embeddings=embeddings
-            )
-            logger.info(f"Added {len(valid_data)} embeddings to collection")
+            try:
+                collection.add(
+                    documents=documents,
+                    metadatas=metadatas,
+                    ids=ids,
+                    embeddings=embeddings
+                )
+                logger.info(f"Added {len(valid_data)} embeddings to collection")
+            except Exception as e:
+                logger.error(f"Error adding embeddings to collection: {e}")
+                if embeddings:
+                    first_embedding = embeddings[0]
+                    logger.error(f"First embedding type: {type(first_embedding)}, length: {len(first_embedding)}")
         else:
             logger.warning("No valid embeddings to add to collection")
 
