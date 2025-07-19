@@ -19,8 +19,25 @@ class ChromaManager:
         async def validate_embedding(texts):
             embeddings = await embedder_async.embed_documents_async(texts)
                 
-            if not all(isinstance(e, list) and all(isinstance(x, (int, float)) for x in e) for e in embeddings):
-                raise ValueError("Invalid embedding format: expected list of lists of numbers")
+            # Handle different embedding formats and ensure they're lists of floats
+            if isinstance(embeddings, list):
+                # If we have a list of lists, validate they contain numbers
+                if all(isinstance(e, list) and all(isinstance(x, (int, float)) for x in e) for e in embeddings):
+                    return embeddings
+                
+                # If we have a list of non-lists, try to convert them to lists
+                if all(not isinstance(e, list) for e in embeddings):
+                    try:
+                        return [[float(x)] for x in embeddings]
+                    except:
+                        raise ValueError("Could not convert embeddings to list of floats")
+            
+            # If we have a single embedding, wrap it in a list
+            try:
+                float(embeddings)
+                return [[float(embeddings)]]
+            except:
+                raise ValueError(f"Invalid embedding format: expected list of lists of numbers, got {type(embeddings)}")
             return embeddings
 
         return self.chroma_client.get_collection(
