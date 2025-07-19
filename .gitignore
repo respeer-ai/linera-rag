@@ -65,3 +65,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+linera-rag-data
+venv
+.venv
