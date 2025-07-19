@@ -33,15 +33,12 @@ class ChromaManager:
             embedding_function=validate_embedding
         )
     
-    def query_index(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Query the current collection with a question"""
+    async def query_index(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+        """Query the current collection with a question asynchronously"""
         collection = self.get_collection()
         
         if embedder_async:
-            # Run async function in sync context
-            async def get_query_embedding_async():
-                return await embedder_async.embed_query_async(query)
-            query_embedding = asyncio.run(get_query_embedding_async())
+            query_embedding = await embedder_async.embed_query_async(query)
         else:
             query_embedding = embedder.embed_query(query)
         

@@ -47,7 +47,7 @@ async def startup_event():
 @app.post("/query", response_model=QueryResponse)
 async def query_endpoint(request: QueryRequest):
     try:
-        results = chroma_manager.query_index(request.text, request.top_k)
+        results = await chroma_manager.query_index(request.text, request.top_k)
         return {"results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

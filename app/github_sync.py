@@ -4,7 +4,7 @@ import asyncio
 from git import Repo
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.config import settings
-from app.embeddings import embedder_async
+from app.embeddings import embedder_async, embedder
 import chromadb
 from chromadb.utils import embedding_functions
 from typing import List, Dict, Any
@@ -194,7 +194,7 @@ class GitHubSync:
         
         for repo_url in settings.REPOSITORIES:
             print(f"Processing repository: {repo_url}")
-            chunks = self.process_repository(repo_url)
+            chunks = await self.process_repository(repo_url)
             all_chunks.extend(chunks)
             print(f"Processed {len(chunks)} chunks from {repo_url}")
         
