@@ -19,12 +19,18 @@ git clone https://github.com/your-username/linera-rag.git
 cd linera-rag
 ```
 
-2. Install dependencies:
+2. Create and activate a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+```
+
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Set your DeepSeek API key in `.env`:
+4. Set your DeepSeek API key in `.env`:
 ```env
 DEEPSEEK_API_KEY=your_api_key_here
 ```
@@ -38,7 +44,15 @@ docker build -t linera-rag .
 
 ### Local Run
 ```bash
+# With virtual environment activated
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### Running with Environment Variables
+You can pass environment variables directly in the command line:
+```bash
+# Example with custom DeepSeek API URL and update interval
+DEEPSEEK_API_URL="https://your-custom-url.com" UPDATE_INTERVAL_HOURS=12 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### Docker Run
@@ -58,6 +72,7 @@ docker run -d -p 8000:8000 --name linera-rag \
 ```
 
 ### Environment Variables
+
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `EMBEDDING_TYPE` | Yes | `chutes` | Embedding provider: `chutes` or `deepseek` |
