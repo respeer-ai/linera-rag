@@ -171,16 +171,11 @@ class GitHubSync:
         all_chunks = []
         
         # Use asyncio.to_thread for file system operations
-        async def process_files():
-            chunks = []
-            for root, dirs, files in os.walk(repo_path):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    file_chunks = await self.process_file(file_path, repo_name)
-                    chunks.extend(file_chunks)
-            return chunks
-            
-        all_chunks = await asyncio.to_thread(process_files)
+        for root, dirs, files in os.walk(repo_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                file_chunks = await self.process_file(file_path, repo_name)
+                all_chunks.extend(file_chunks)
         
         return all_chunks
     
