@@ -49,39 +49,36 @@ class GitHubSync:
     async def process_file(self, file_path: str, repo_name: str) -> List[Dict[str, Any]]:
         """Process a file and return chunks with metadata"""
         # Use asyncio.to_thread for file I/O operations
-        async def read_and_process():
-            if not os.path.isfile(file_path):
-                return []
-            
-            # Skip non-text files
-            if not file_path.endswith(('.md', '.txt', '.rs', '.ts')):
-                return []
-            
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-            except UnicodeDecodeError:
-                return []
-            
-            # Create chunks
-            chunks = self.text_splitter.split_text(content)
-            
-            # Prepare metadata for each chunk
-            results = []
-            for i, chunk in enumerate(chunks):
-                results.append({
-                    "text": chunk,
-                    "metadata": {
-                        "source": file_path,
-                        "repo": repo_name,
-                        "chunk_index": i,
-                        "total_chunks": len(chunks)
-                    }
-                })
-            
-            return results
-            
-        return await asyncio.to_thread(read_and_process)
+        if not os.path.isfile(file_path):
+            return []
+        
+        # Skip non-text files
+        if not file_path.endswith(('.md', '.txt', '.rs', '.ts')):
+            return []
+        
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            return []
+        
+        # Create chunks
+        chunks = self.text_splitter.split_text(content)
+        
+        # Prepare metadata for each chunk
+        results = []
+        for i, chunk in enumerate(chunks):
+            results.append({
+                "text": chunk,
+                "metadata": {
+                    "source": file_path,
+                    "repo": repo_name,
+                    "chunk_index": i,
+                    "total_chunks": len(chunks)
+                }
+            })
+        
+        return results
     
     async def create_index(self, chunks: List[Dict[str, Any]], collection_name: str):
         """Create a new index with the given chunks"""
