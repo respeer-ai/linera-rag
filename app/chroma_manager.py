@@ -37,7 +37,15 @@ class ChromaManager:
                 float(embeddings)
                 return [[float(embeddings)]]
             except:
-                raise ValueError(f"Invalid embedding format: expected list of lists of numbers, got {type(embeddings)}")
+                # If all else fails, try to parse it as a string representation of a list
+                try:
+                    import json
+                    parsed = json.loads(embeddings)
+                    if isinstance(parsed, list):
+                        return [parsed]
+                    raise ValueError(f"Could not parse embedding: {type(embeddings)}")
+                except:
+                    raise ValueError(f"Invalid embedding format: expected list of lists of numbers, got {type(embeddings)}")
             return embeddings
 
         return self.chroma_client.get_collection(
