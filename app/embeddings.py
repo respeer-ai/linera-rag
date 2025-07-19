@@ -21,14 +21,14 @@ class DeepSeekEmbeddings:
         )
         # Ensure the response is properly formatted as a list of lists of floats
         embeddings = [list(map(float, embedding.embedding)) for embedding in response.data]
-        logger.debug(f"Got {len(embeddings)} embeddings with size {len(embeddings[0])} each")
+        logger.debug(f"Got {len(embeddings)} embeddings with size {len(embeddings[0])} each. First embedding: {embeddings[0][:16]}")
         return embeddings
     
     async def embed_query_async(self, text: str) -> list[float]:
         """Asynchronously embed a single query"""
         logger.debug(f"Embedding query: {text[:50]}...")
         result = (await self.embed_documents_async([text]))[0]
-        logger.debug(f"Query embedding result length: {len(result)}")
+        logger.debug(f"Query embedding result length: {len(result)}. First 16 values: {result[:16]}")
         return result
 
 class ChutesEmbeddings:
@@ -61,7 +61,7 @@ class ChutesEmbeddings:
         ) as response:
             response.raise_for_status()
             result = await response.json()
-            logger.debug(f"Received Chutes API response: {str(result)[:200]}...")
+            logger.debug(f"Received Chutes API response: {str(result)[:16]}...")
             # Handle both list and dict responses
             if isinstance(result, list):
                 logger.debug(f"Got list response with {len(result)} items")
