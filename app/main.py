@@ -7,6 +7,7 @@ from app.chroma_manager import chroma_manager
 from app.config import settings
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import uvicorn
+from app.logger import logger
 
 app = FastAPI(title="Linera RAG Service")
 
