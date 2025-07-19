@@ -40,7 +40,7 @@ class GitHubSync:
             repo = Repo(repo_path)
             repo.remotes.origin.pull()
         else:
-            await Repo.clone_from(repo_url, repo_path)
+            Repo.clone_from(repo_url, repo_path)
         
         return repo_path
     
