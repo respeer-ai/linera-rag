@@ -56,17 +56,10 @@ class ChromaManager:
                     raise ValueError(f"Invalid embedding format: expected list of lists of numbers, got {type(embeddings)}")
             return embeddings
         
-        # Create a synchronous wrapper for the async function
+        # Use the synchronous methods from the embedder
         def sync_embedding_function(texts):
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                result = loop.run_until_complete(validate_embedding(texts))
-            finally:
-                loop.close()
-            return result
+            return embedder_async.embed_documents(texts)
         
-        # Set function attributes to avoid ChromaDB errors
         sync_embedding_function.__name__ = "validate_embedding"
         sync_embedding_function.name = "validate_embedding"
 

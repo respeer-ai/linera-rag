@@ -31,6 +31,16 @@ class DeepSeekEmbeddings:
         logger.debug(f"Query embedding result length: {len(result)}. First 16 values: {result[:16]}")
         return result
 
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        """Synchronously embed multiple documents"""
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(self.embed_documents_async(texts))
+    
+    def embed_query(self, text: str) -> list[float]:
+        """Synchronously embed a single query"""
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(self.embed_query_async(text))
+
 class ChutesEmbeddings:
     def __init__(self):
         self.api_url = settings.CHUTES_API_URL
