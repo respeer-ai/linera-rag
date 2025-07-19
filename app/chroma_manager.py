@@ -3,6 +3,7 @@ import chromadb
 import asyncio
 from app.config import settings
 from app.embeddings import embedder_async
+from app.logger import logger
 from typing import List, Dict, Any
 
 class ChromaManager:

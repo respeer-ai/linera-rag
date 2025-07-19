@@ -28,7 +28,7 @@ async def startup_event():
     try:
         await github_sync.update()
     except Exception as e:
-        print(f"Error during startup index update: {e}")
+        logger.error(f"Error during startup index update: {e}")
         raise
     
     # Schedule regular updates
@@ -41,7 +41,7 @@ async def startup_event():
         )
         scheduler.start()
     except Exception as e:
-        print(f"Error starting scheduler: {e}")
+        logger.error(f"Error starting scheduler: {e}")
         raise
 
 @app.post("/query", response_model=QueryResponse)

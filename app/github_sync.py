@@ -7,6 +7,7 @@ from app.config import settings
 from app.embeddings import embedder_async
 import chromadb
 from chromadb.utils import embedding_functions
+from app.logger import logger
 from typing import List, Dict, Any
 import hashlib
 import shutil
@@ -80,7 +81,9 @@ class GitHubSync:
     
     async def create_index(self, chunks: List[Dict[str, Any]], collection_name: str):
         """Create a new index with the given chunks"""
+        logger.info(f"Creating index {collection_name} with {len(chunks)} chunks")
         if not chunks:
+            logger.warning("No chunks provided to create index")
             return
         
         # Create or get collection
@@ -136,6 +139,7 @@ class GitHubSync:
             # Create unique ID based on content and metadata
             unique_str = f"{chunk['text']}{str(chunk['metadata'])}"
             ids.append(hashlib.sha256(unique_str.encode()).hexdigest())
+            logger.debug(f"Created ID for chunk: {unique_str[:50]}...")
         
         # Filter out any None or empty embeddings
         valid_data = [
@@ -154,8 +158,9 @@ class GitHubSync:
                 ids=ids,
                 embeddings=embeddings
             )
+            logger.info(f"Added {len(valid_data)} embeddings to collection")
         else:
-            print("No valid embeddings to add to collection")
+            logger.warning("No valid embeddings to add to collection")
 
     async def process_repository(self, repo_url: str) -> List[Dict[str, Any]]:
         """Clone or update a repository and process all its files"""
@@ -172,31 +177,32 @@ class GitHubSync:
                 file_chunks = await self.process_file(file_path, repo_name)
                 all_chunks.extend(file_chunks)
         
+        logger.info(f"Processed repository {repo_url} with {len(all_chunks)} chunks")
         return all_chunks
     
     async def update(self):
         """Update all repositories and refresh the index asynchronously"""
-        print("Starting repository update...")
+        logger.info("Starting repository update...")
         all_chunks = []
         
         for repo_url in settings.REPOSITORIES:
-            print(f"Processing repository: {repo_url}")
+            logger.info(f"Processing repository: {repo_url}")
             chunks = await self.process_repository(repo_url)
             all_chunks.extend(chunks)
-            print(f"Processed {len(chunks)} chunks from {repo_url}")
+            logger.info(f"Processed {len(chunks)} chunks from {repo_url}")
         
         # Create new index asynchronously
-        print("Creating new index...")
+        logger.info("Creating new index...")
         await self.create_index(all_chunks, self.new_collection_name)
         
         # Atomically swap indexes
-        print("Swapping indexes...")
+        logger.info("Swapping indexes...")
         collections = self.chroma_client.list_collections()
         if self.current_collection_name in [col.name for col in collections]:
             self.chroma_client.delete_collection(self.current_collection_name)
         self.chroma_client.get_collection(self.new_collection_name).modify(name=self.current_collection_name)
         
-        print("Index update complete")
+        logger.info("Index update complete")
     
     def get_query_collection(self):
         """Get the current collection for querying"""

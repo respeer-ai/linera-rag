@@ -1,6 +1,7 @@
 import os
 from pydantic_settings import BaseSettings
 from enum import Enum
+from app.logger import logger
 
 class EmbeddingType(str, Enum):
     DEEPSEEK = "deepseek"
@@ -35,3 +36,4 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 settings = Settings()
+logger.debug("Settings initialized")

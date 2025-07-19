@@ -2,6 +2,7 @@ from openai import AsyncOpenAI
 import aiohttp
 import asyncio
 from app.config import settings, EmbeddingType
+from app.logger import logger
 
 class DeepSeekEmbeddings:
     def __init__(self):
@@ -13,16 +14,22 @@ class DeepSeekEmbeddings:
     
     async def embed_documents_async(self, texts: list[str]) -> list[list[float]]:
         """Asynchronously embed multiple documents"""
+        logger.debug(f"Embedding {len(texts)} documents")
         response = await self.client.embeddings.create(
             input=texts,
             model=self.model
         )
         # Ensure the response is properly formatted as a list of lists of floats
-        return [list(map(float, embedding.embedding)) for embedding in response.data]
+        embeddings = [list(map(float, embedding.embedding)) for embedding in response.data]
+        logger.debug(f"Got {len(embeddings)} embeddings with size {len(embeddings[0])} each")
+        return embeddings
     
     async def embed_query_async(self, text: str) -> list[float]:
         """Asynchronously embed a single query"""
-        return (await self.embed_documents_async([text]))[0]
+        logger.debug(f"Embedding query: {text[:50]}...")
+        result = (await self.embed_documents_async([text]))[0]
+        logger.debug(f"Query embedding result length: {len(result)}")
+        return result
 
 class ChutesEmbeddings:
     def __init__(self):
@@ -46,6 +53,7 @@ class ChutesEmbeddings:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
+        logger.debug(f"Sending request to Chutes API: {text[:50]}...")
         async with session.post(
             self.api_url,
             headers=headers,
@@ -53,12 +61,17 @@ class ChutesEmbeddings:
         ) as response:
             response.raise_for_status()
             result = await response.json()
+            logger.debug(f"Received Chutes API response: {str(result)[:200]}...")
             # Handle both list and dict responses
             if isinstance(result, list):
+                logger.debug(f"Got list response with {len(result)} items")
                 return result  # Return the list directly
             elif isinstance(result, dict):
-                return result.get('embedding', [])  # Extract embedding if available
+                embedding = result.get('embedding', [])
+                logger.debug(f"Got dict response with embedding of length {len(embedding)}")
+                return embedding  # Extract embedding if available
             else:
+                logger.warning("Got unexpected response type")
                 return []  # Default to empty list for unexpected responses
 
 # Choose embedder based on configuration
