@@ -21,10 +21,14 @@ class ChromaManager:
                 
             # Handle different embedding formats and ensure they're lists of floats
             # Convert tuples to lists
+            # Convert top-level tuple to list
             if isinstance(embeddings, tuple):
                 embeddings = list(embeddings)
                 
             if isinstance(embeddings, list):
+                # Convert any tuple elements to lists
+                embeddings = [list(e) if isinstance(e, tuple) else e for e in embeddings]
+                
                 # If we have a list of lists, validate they contain numbers
                 if all(isinstance(e, list) and all(isinstance(x, (int, float)) for x in e) for e in embeddings):
                     return embeddings
@@ -51,6 +55,10 @@ class ChromaManager:
                 except:
                     raise ValueError(f"Invalid embedding format: expected list of lists of numbers, got {type(embeddings)}")
             return embeddings
+        
+        # Set function attributes to avoid ChromaDB errors
+        validate_embedding.__name__ = "validate_embedding"
+        validate_embedding.name = "validate_embedding"
 
         return self.chroma_client.get_collection(
             name=collection_name,
