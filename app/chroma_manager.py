@@ -20,6 +20,10 @@ class ChromaManager:
             embeddings = await embedder_async.embed_documents_async(texts)
                 
             # Handle different embedding formats and ensure they're lists of floats
+            # Convert tuples to lists
+            if isinstance(embeddings, tuple):
+                embeddings = list(embeddings)
+                
             if isinstance(embeddings, list):
                 # If we have a list of lists, validate they contain numbers
                 if all(isinstance(e, list) and all(isinstance(x, (int, float)) for x in e) for e in embeddings):
