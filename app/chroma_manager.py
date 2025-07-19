@@ -56,13 +56,23 @@ class ChromaManager:
                     raise ValueError(f"Invalid embedding format: expected list of lists of numbers, got {type(embeddings)}")
             return embeddings
         
+        # Create a synchronous wrapper for the async function
+        def sync_embedding_function(texts):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(validate_embedding(texts))
+            finally:
+                loop.close()
+            return result
+        
         # Set function attributes to avoid ChromaDB errors
-        validate_embedding.__name__ = "validate_embedding"
-        validate_embedding.name = "validate_embedding"
+        sync_embedding_function.__name__ = "validate_embedding"
+        sync_embedding_function.name = "validate_embedding"
 
         return self.chroma_client.get_collection(
             name=collection_name,
-            embedding_function=validate_embedding
+            embedding_function=sync_embedding_function
         )
     
     async def query_index(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
