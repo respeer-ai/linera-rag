@@ -4,7 +4,7 @@ import asyncio
 from git import Repo
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.config import settings
-from app.embeddings import embedder_async, embedder
+from app.embeddings import embedder_async
 import chromadb
 from chromadb.utils import embedding_functions
 from typing import List, Dict, Any
@@ -129,11 +129,8 @@ class GitHubSync:
                 return flattened if flattened else None
             return None
 
-        # Get embeddings based on configuration
-        if embedder_async:
-            embeddings = await embedder_async.embed_documents_async(texts)
-        else:
-            embeddings = embedder.embed_documents(texts)
+        # Embed documents asynchronously
+        embeddings = await embedder_async.embed_documents_async(texts)
             
         # Ensure embeddings are properly formatted
         embeddings = [parse_embedding(embedding) for embedding in embeddings]

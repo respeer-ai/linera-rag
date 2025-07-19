@@ -68,19 +68,3 @@ elif settings.EMBEDDING_TYPE == EmbeddingType.CHUTES:
     embedder_async = ChutesEmbeddings()
 else:
     raise ValueError(f"Unsupported embedding type: {settings.EMBEDDING_TYPE}")
-
-# For backward compatibility - synchronous wrapper around async embedder
-class SyncEmbeddingWrapper:
-    def __init__(self, async_embedder):
-        self.async_embedder = async_embedder
-    
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        """Synchronous wrapper for embed_documents_async"""
-        return asyncio.run(self.async_embedder.embed_documents_async(texts))
-    
-    def embed_query(self, text: str) -> list[float]:
-        """Synchronous wrapper for embed_query_async"""
-        return asyncio.run(self.async_embedder.embed_query_async(text))
-
-# Create a synchronous wrapper for backward compatibility
-embedder = SyncEmbeddingWrapper(embedder_async)

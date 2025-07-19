@@ -2,7 +2,7 @@ import os
 import chromadb
 import asyncio
 from app.config import settings
-from app.embeddings import embedder, embedder_async
+from app.embeddings import embedder_async
 from typing import List, Dict, Any
 
 class ChromaManager:
@@ -15,14 +15,8 @@ class ChromaManager:
         """Get the current production collection"""
         collection_name = name or self.current_collection_name
         # Ensure the embedding function returns a list of floats
-        def validate_embedding(texts):
-            if embedder_async:
-                # Run async function in sync context
-                async def get_embeddings_async():
-                    return await embedder_async.embed_documents_async(texts)
-                embeddings = asyncio.run(get_embeddings_async())
-            else:
-                embeddings = embedder.embed_documents(texts)
+        async def validate_embedding(texts):
+            embeddings = await embedder_async.embed_documents_async(texts)
                 
             if not all(isinstance(e, list) and all(isinstance(x, (int, float)) for x in e) for e in embeddings):
                 raise ValueError("Invalid embedding format: expected list of lists of numbers")
@@ -37,10 +31,7 @@ class ChromaManager:
         """Query the current collection with a question asynchronously"""
         collection = self.get_collection()
         
-        if embedder_async:
-            query_embedding = await embedder_async.embed_query_async(query)
-        else:
-            query_embedding = embedder.embed_query(query)
+        query_embedding = await embedder_async.embed_query_async(query)
         
         results = collection.query(
             query_embeddings=[query_embedding],
@@ -61,27 +52,16 @@ class ChromaManager:
             )
         ]
     
-    def create_staging_collection(self):
+    async def create_staging_collection(self):
         """Create a new staging collection for updates"""
         # Delete existing staging collection if exists
         collections = self.chroma_client.list_collections()
         if any(col.name == self.staging_collection_name for col in collections):
             self.chroma_client.delete_collection(self.staging_collection_name)
-        
-        if embedder_async:
-            # For async embedder, we need to create a wrapper function
-            def async_embed_wrapper(texts):
-                async def get_embeddings_async():
-                    return await embedder_async.embed_documents_async(texts)
-                return asyncio.run(get_embeddings_async())
-            
-            embedding_function = async_embed_wrapper
-        else:
-            embedding_function = embedder.embed_documents
             
         return self.chroma_client.create_collection(
             name=self.staging_collection_name,
-            embedding_function=embedding_function
+            embedding_function=embedder_async.embed_documents_async
         )
     
     def swap_collections(self):
