@@ -56,20 +56,16 @@ class ChromaManager:
                     raise ValueError(f"Invalid embedding format: expected list of lists of numbers, got {type(embeddings)}")
             return embeddings
         
-        # Create an embedding function class to satisfy ChromaDB requirements
-        class CustomEmbeddingFunction:
-            def __init__(self):
-                self.__name__ = "custom_embedding_function"
-                self.name = "custom_embedding_function"
-            
-            def __call__(self, texts):
-                return embedder_async.embed_documents(texts)
+        # Create a simple function with explicit name attribute
+        def embedding_function(texts):
+            return embedder_async.embed_documents(texts)
         
-        embedding_fn = CustomEmbeddingFunction()
+        embedding_function.__name__ = "custom_embedding_function"
+        embedding_function.name = "custom_embedding_function"
         
         return self.chroma_client.get_collection(
             name=collection_name,
-            embedding_function=embedding_fn
+            embedding_function=embedding_function
         )
     
     async def query_index(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
