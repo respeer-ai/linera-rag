@@ -1,28 +1,28 @@
-from openai import OpenAI
+from openai import AsyncOpenAI
 import aiohttp
 import asyncio
 from app.config import settings, EmbeddingType
 
 class DeepSeekEmbeddings:
     def __init__(self):
-        self.client = OpenAI(
+        self.client = AsyncOpenAI(
             api_key=settings.DEEPSEEK_API_KEY,
             base_url=settings.DEEPSEEK_API_URL
         )
         self.model = settings.EMBEDDING_MODEL
     
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        """Embed multiple documents"""
-        response = self.client.embeddings.create(
+    async def embed_documents_async(self, texts: list[str]) -> list[list[float]]:
+        """Asynchronously embed multiple documents"""
+        response = await self.client.embeddings.create(
             input=texts,
             model=self.model
         )
         # Ensure the response is properly formatted as a list of lists of floats
         return [list(map(float, embedding.embedding)) for embedding in response.data]
     
-    def embed_query(self, text: str) -> list[float]:
-        """Embed a single query"""
-        return self.embed_documents([text])[0]
+    async def embed_query_async(self, text: str) -> list[float]:
+        """Asynchronously embed a single query"""
+        return (await self.embed_documents_async([text]))[0]
 
 class ChutesEmbeddings:
     def __init__(self):
@@ -63,10 +63,8 @@ class ChutesEmbeddings:
 
 # Choose embedder based on configuration
 if settings.EMBEDDING_TYPE == EmbeddingType.DEEPSEEK:
-    embedder = DeepSeekEmbeddings()
-    embedder_async = None
+    embedder_async = DeepSeekEmbeddings()
 elif settings.EMBEDDING_TYPE == EmbeddingType.CHUTES:
-    embedder = None
     embedder_async = ChutesEmbeddings()
 else:
     raise ValueError(f"Unsupported embedding type: {settings.EMBEDDING_TYPE}")

@@ -4,7 +4,7 @@ import asyncio
 from git import Repo
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from app.config import settings
-from app.embeddings import embedder, embedder_async
+from app.embeddings import embedder_async
 import chromadb
 from chromadb.utils import embedding_functions
 from typing import List, Dict, Any
@@ -28,53 +28,60 @@ class GitHubSync:
         os.makedirs(settings.REPOS_DIR, exist_ok=True)
         os.makedirs(settings.CHROMA_DIR, exist_ok=True)
     
-    def clone_or_update_repo(self, repo_url: str) -> str:
+    async def clone_or_update_repo(self, repo_url: str) -> str:
         """Clone or update a repository and return its local path"""
         repo_name = repo_url.split('/')[-1]
         if repo_name.endswith('.git'):
             repo_name = repo_name[:-4]
         repo_path = os.path.join(settings.REPOS_DIR, repo_name)
         
+        # Use asyncio.to_thread to run git operations in a separate thread
         if os.path.exists(repo_path):
-            repo = Repo(repo_path)
-            repo.remotes.origin.pull()
+            async def pull_repo():
+                repo = Repo(repo_path)
+                repo.remotes.origin.pull()
+            await asyncio.to_thread(pull_repo)
         else:
-            Repo.clone_from(repo_url, repo_path)
+            await asyncio.to_thread(lambda: Repo.clone_from(repo_url, repo_path))
         
         return repo_path
     
-    def process_file(self, file_path: str, repo_name: str) -> List[Dict[str, Any]]:
+    async def process_file(self, file_path: str, repo_name: str) -> List[Dict[str, Any]]:
         """Process a file and return chunks with metadata"""
-        if not os.path.isfile(file_path):
-            return []
-        
-        # Skip non-text files
-        if not file_path.endswith(('.md', '.txt', '.rs', '.ts')):
-            return []
-        
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-        except UnicodeDecodeError:
-            return []
-        
-        # Create chunks
-        chunks = self.text_splitter.split_text(content)
-        
-        # Prepare metadata for each chunk
-        results = []
-        for i, chunk in enumerate(chunks):
-            results.append({
-                "text": chunk,
-                "metadata": {
-                    "source": file_path,
-                    "repo": repo_name,
-                    "chunk_index": i,
-                    "total_chunks": len(chunks)
-                }
-            })
-        
-        return results
+        # Use asyncio.to_thread for file I/O operations
+        async def read_and_process():
+            if not os.path.isfile(file_path):
+                return []
+            
+            # Skip non-text files
+            if not file_path.endswith(('.md', '.txt', '.rs', '.ts')):
+                return []
+            
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+            except UnicodeDecodeError:
+                return []
+            
+            # Create chunks
+            chunks = self.text_splitter.split_text(content)
+            
+            # Prepare metadata for each chunk
+            results = []
+            for i, chunk in enumerate(chunks):
+                results.append({
+                    "text": chunk,
+                    "metadata": {
+                        "source": file_path,
+                        "repo": repo_name,
+                        "chunk_index": i,
+                        "total_chunks": len(chunks)
+                    }
+                })
+            
+            return results
+            
+        return await asyncio.to_thread(read_and_process)
     
     async def create_index(self, chunks: List[Dict[str, Any]], collection_name: str):
         """Create a new index with the given chunks"""
@@ -158,18 +165,25 @@ class GitHubSync:
         else:
             print("No valid embeddings to add to collection")
 
-    def process_repository(self, repo_url: str) -> List[Dict[str, Any]]:
+    async def process_repository(self, repo_url: str) -> List[Dict[str, Any]]:
         """Clone or update a repository and process all its files"""
-        repo_path = self.clone_or_update_repo(repo_url)
+        repo_path = await self.clone_or_update_repo(repo_url)
         repo_name = repo_url.split('/')[-1].replace('.git', '')
         
         # Walk through all files in the repository
         all_chunks = []
-        for root, dirs, files in os.walk(repo_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                file_chunks = self.process_file(file_path, repo_name)
-                all_chunks.extend(file_chunks)
+        
+        # Use asyncio.to_thread for file system operations
+        async def process_files():
+            chunks = []
+            for root, dirs, files in os.walk(repo_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    file_chunks = await self.process_file(file_path, repo_name)
+                    chunks.extend(file_chunks)
+            return chunks
+            
+        all_chunks = await asyncio.to_thread(process_files)
         
         return all_chunks
     
